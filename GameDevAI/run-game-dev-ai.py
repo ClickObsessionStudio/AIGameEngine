@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-from create_game import publish_game   # <-- your module with publish_game()
+from GameDevAI.src.create_game import publish_game   # <-- your module with publish_game()
 
 # Adjust if needed
 SITE_DIR = Path(__file__).parent.parent / "Website"
