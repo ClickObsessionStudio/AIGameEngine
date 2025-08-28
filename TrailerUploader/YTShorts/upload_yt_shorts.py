@@ -18,6 +18,9 @@ from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# In a serverless environment, only /tmp is writable.
+# We define paths at the top for clarity.
+TOKEN_PATH = "/tmp/token.json" if os.getenv("VERCEL") else "token.json"
 CLIENT_SECRETS_FILE = "client_secret.json"
 API_SERVICE_NAME = "youtube"
 API_VERSION = "v3"
@@ -27,52 +30,57 @@ def get_youtube_client():
     creds = None
     
     # --- Vercel/Environment Variable Authentication ---
-    # This block will run if the app is on Vercel or if token.json is missing
-    if os.getenv("VERCEL") or not os.path.exists("token.json"):
-        # Check for all required environment variables
+    # This is the primary method for production environments.
+    if os.getenv("VERCEL"):
         required_vars = [
             "YT_CLIENT_ID", "YT_CLIENT_SECRET", "YT_TOKEN", 
             "YT_REFRESH_TOKEN", "YT_TOKEN_URI", "YT_SCOPES"
         ]
+        # Ensure all required variables are present
         if all(os.getenv(var) for var in required_vars):
-            creds = Credentials(
-                token=os.getenv("YT_TOKEN"),
-                refresh_token=os.getenv("YT_REFRESH_TOKEN"),
-                token_uri=os.getenv("YT_TOKEN_URI"),
-                client_id=os.getenv("YT_CLIENT_ID"),
-                client_secret=os.getenv("YT_CLIENT_SECRET"),
-                scopes=os.getenv("YT_SCOPES").split(',') # Scopes are comma-separated in env var
-            )
+            try:
+                creds = Credentials(
+                    token=os.getenv("YT_TOKEN"),
+                    refresh_token=os.getenv("YT_REFRESH_TOKEN"),
+                    token_uri=os.getenv("YT_TOKEN_URI"),
+                    client_id=os.getenv("YT_CLIENT_ID"),
+                    client_secret=os.getenv("YT_CLIENT_SECRET"),
+                    scopes=os.getenv("YT_SCOPES").split(',')
+                )
+                # Refresh the token if it's expired
+                if creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+            except Exception as e:
+                print(f"Error creating credentials from environment variables: {e}")
+                sys.exit("FATAL: Failed to initialize YouTube credentials on Vercel.")
         else:
-            # If running on Vercel without env vars, it's a fatal error
-            if os.getenv("VERCEL"):
-                sys.exit("FATAL: YouTube authentication environment variables are not set on Vercel.")
-            # Fallback to local file-based flow if not on Vercel
-            pass 
+            sys.exit("FATAL: YouTube authentication environment variables are not set on Vercel.")
     
     # --- Local File-Based Authentication ---
-    # This block runs if the environment variable method didn't create credentials
-    if not creds:
-        if os.path.exists("token.json"):
-            creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    
-    # --- Token Refresh/Creation Logic ---
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            # This part is for local development first-time setup
-            if not os.path.exists(CLIENT_SECRETS_FILE):
-                sys.exit(
-                    f"Missing {CLIENT_SECRETS_FILE}. This is required for the initial local authentication."
-                )
-            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
-            creds = flow.run_local_server(port=0, prompt="consent")
+    # This block runs only if not on Vercel.
+    else:
+        if os.path.exists(TOKEN_PATH):
+            creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
         
-        # Save the credentials for the next run (only in local development)
-        if not os.getenv("VERCEL"):
-            with open("token.json", "w") as token:
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                if not os.path.exists(CLIENT_SECRETS_FILE):
+                    sys.exit(
+                        f"Missing {CLIENT_SECRETS_FILE}. This is required for the initial local authentication."
+                    )
+                flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+                creds = flow.run_local_server(port=0, prompt="consent")
+            
+            # Save the credentials for the next run
+            with open(TOKEN_PATH, "w") as token:
                 token.write(creds.to_json())
+
+    # If after all methods, credentials are not available, exit.
+    if not creds:
+        sys.exit("FATAL: Could not obtain YouTube credentials.")
 
     return build(API_SERVICE_NAME, API_VERSION, credentials=creds)
 
