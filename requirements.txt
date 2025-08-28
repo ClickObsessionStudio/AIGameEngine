@@ -1,5 +1,5 @@
 # Requirements for AIGameEngine
-requests
+# requests
 python-dotenv
 
 # Requirements for CinematicTrailerGenAI Module
@@ -9,17 +9,17 @@ python-dotenv
 
 
 # YT Shorts Uploader
-google-api-python-client
-google-auth-oauthlib
-google-auth-httplib2
+# google-api-python-client
+# google-auth-oauthlib
+# google-auth-httplib2
 
 
-# Requirements for TrailerUploader Module
-python-dotenv
-fal-client
-requests
-moviepy>=2
-imageio-ffmpeg>=0.4.9
+# # Requirements for TrailerUploader Module
+# python-dotenv
+# fal-client
+# requests
+# moviepy>=2
+# imageio-ffmpeg>=0.4.9
 
 # Requirements for Website
 flask==3.0.3
@@ -28,6 +28,3 @@ werkzeug>=3.0.0
 python-dotenv>=1.0.1
 openai>=1.30.0
 requests>=2.31.0
-google-api-python-client
-google-auth-oauthlib
-google-auth-httplib2
