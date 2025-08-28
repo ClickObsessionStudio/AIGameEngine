@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
 """
 Minimal YouTube uploader (YouTube Data API v3)
-
-Usage:
-  python upload_youtube.py /path/to/video.mp4 --title "My Title" --description "My description" --tags "tag1,tag2" --privacy public
-
-Setup (one-time):
-  1) Create a Google Cloud project and enable the "YouTube Data API v3".
-  2) Create OAuth 2.0 Client ID (type: Desktop App) and download the JSON as client_secret.json.
-  3) Place client_secret.json next to this script.
-  4) pip install -r requirements.txt
-On first run, your browser will open to authorize. A token.json will be saved for reuse.
+...
 """
 
 import argparse
 import os
 import sys
+import json
 from typing import List, Optional
 
 from google.oauth2.credentials import Credentials
@@ -33,21 +25,55 @@ API_VERSION = "v3"
 
 def get_youtube_client():
     creds = None
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    
+    # --- Vercel/Environment Variable Authentication ---
+    # This block will run if the app is on Vercel or if token.json is missing
+    if os.getenv("VERCEL") or not os.path.exists("token.json"):
+        # Check for all required environment variables
+        required_vars = [
+            "YT_CLIENT_ID", "YT_CLIENT_SECRET", "YT_TOKEN", 
+            "YT_REFRESH_TOKEN", "YT_TOKEN_URI", "YT_SCOPES"
+        ]
+        if all(os.getenv(var) for var in required_vars):
+            creds = Credentials(
+                token=os.getenv("YT_TOKEN"),
+                refresh_token=os.getenv("YT_REFRESH_TOKEN"),
+                token_uri=os.getenv("YT_TOKEN_URI"),
+                client_id=os.getenv("YT_CLIENT_ID"),
+                client_secret=os.getenv("YT_CLIENT_SECRET"),
+                scopes=os.getenv("YT_SCOPES").split(',') # Scopes are comma-separated in env var
+            )
+        else:
+            # If running on Vercel without env vars, it's a fatal error
+            if os.getenv("VERCEL"):
+                sys.exit("FATAL: YouTube authentication environment variables are not set on Vercel.")
+            # Fallback to local file-based flow if not on Vercel
+            pass 
+    
+    # --- Local File-Based Authentication ---
+    # This block runs if the environment variable method didn't create credentials
+    if not creds:
+        if os.path.exists("token.json"):
+            creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    
+    # --- Token Refresh/Creation Logic ---
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            # This part is for local development first-time setup
             if not os.path.exists(CLIENT_SECRETS_FILE):
                 sys.exit(
-                    f"Missing {CLIENT_SECRETS_FILE}. Put your OAuth client secrets JSON next to this script."
+                    f"Missing {CLIENT_SECRETS_FILE}. This is required for the initial local authentication."
                 )
             flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
-            # Uses a local server for OAuth; opens a browser window
             creds = flow.run_local_server(port=0, prompt="consent")
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
+        
+        # Save the credentials for the next run (only in local development)
+        if not os.getenv("VERCEL"):
+            with open("token.json", "w") as token:
+                token.write(creds.to_json())
+
     return build(API_SERVICE_NAME, API_VERSION, credentials=creds)
 
 

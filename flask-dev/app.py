@@ -1,18 +1,33 @@
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 from flask import Flask, render_template, request, send_from_directory, jsonify
 from dotenv import load_dotenv
 
-from game_engine import generate_game, get_default_model  # updated helper
-from openai_client import get_client                      # single client
+# --- Add paths to other modules ---
+# This should be at the top, before other project imports
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT / "CinematicTrailerGenAI" / "src"))
+sys.path.append(str(REPO_ROOT / "TrailerUploader" / "YTShorts"))
+# --- End of path additions ---
+
+
+from game_engine import generate_game, get_default_model
+from openai_client import get_client
 from storage import SITE_DIR, ensure_site, list_games, save_game_files, extract_title_from_html
-
-from pathlib import Path
 from flask import send_file
-# trailers
 
-# youtube
+# trailers - Now these imports will work
+from generate_cinematic_trailer import generate_cinematic_trailer
+from video_utils import resize_video_to_vertical
+
+# youtube - This import will work after renaming the file
+from upload_yt_shorts import upload_video, get_youtube_client
+
+from googleapiclient.errors import HttpError
+import traceback
 
 
 ensure_site()
@@ -140,9 +155,6 @@ def api_trailer_generate():
     if os.getenv("VERCEL"):
         return jsonify({"ok": False, "error": "Trailer generation is disabled on Vercel. Run locally."}), 501
     
-    from generate_cinematic_trailer import generate_cinematic_trailer
-    from video_utils import resize_video_to_vertical
-
     data = request.get_json(force=True) or {}
     summary = (data.get("summary") or data.get("prompt") or "").strip()
     title = (data.get("title") or "game-trailer").strip()[:60]
@@ -167,23 +179,19 @@ def api_trailer_generate():
         )
 
         # 2) Resize to vertical with padding (Shorts friendly)
-        #    Some helpers return a path; some write in place. Handle both.
         maybe_new = resize_video_to_vertical(gen_path, mode="pad")
         if maybe_new:
             try:
-                # If it returned a path/string, use it
                 from pathlib import Path as _P
                 pad_path = _P(maybe_new)
             except Exception:
                 pass
-        # If the helper wrote to "{orig}_pad.mp4", move/rename to our expected pad_name if needed
+        
         if not pad_path.exists():
-            # try common default naming from helpers
             guessed = MEDIA_DIR / f"{gen_path.stem}_pad.mp4"
             if guessed.exists():
                 guessed.replace(pad_path)
             else:
-                # last resort: if helper modified in place, copy to pad_name
                 if gen_path.exists():
                     import shutil
                     shutil.copy2(gen_path, pad_path)
@@ -193,25 +201,16 @@ def api_trailer_generate():
 
     return jsonify({
         "ok": True,
-        "filename": pad_path.name,           # return the PADDED filename
+        "filename": pad_path.name,
         "video_url": f"/media/{pad_path.name}"
     })
 
-
-
-from googleapiclient.errors import HttpError
-import traceback
 
 @app.post("/api/trailer/upload")
 def api_trailer_upload():
     if os.getenv("VERCEL"):
         return jsonify({"ok": False, "error": "YouTube upload is disabled on Vercel. Run locally."}), 501
-
-    from upload_yt_shorts import upload_video, get_youtube_client
-    from googleapiclient.errors import HttpError
-    import traceback
     
-
     data = request.get_json(force=True) or {}
     filename = (data.get("filename") or "").strip()
     title = (data.get("title") or "Game Trailer").strip()
@@ -264,5 +263,4 @@ def site_static(subpath: str):
 
 
 if __name__ == "__main__":
-    # Use 5000 (default) unless you specifically want a different port.
     app.run(host="127.0.0.1", port=5000, debug=True)
