@@ -4,17 +4,15 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from flask import Flask, render_template, request, send_from_directory, jsonify
-from dotenv import load_dotenv
 
 # --- Add paths to other modules ---
 # The folders are now inside the same directory as app.py
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(REPO_ROOT / "CinematicTrailerGenAI" / "src"))
-sys.path.append(str(REPO_ROOT / "TrailerUploader" / "YTShorts"))
+APP_ROOT = Path(__file__).resolve().parent
+sys.path.append(str(APP_ROOT / "CinematicTrailerGenAI" / "src"))
+sys.path.append(str(APP_ROOT / "TrailerUploader" / "YTShorts"))
 # --- End of path additions ---
 
-
+from flask import Flask, render_template, request, send_from_directory, jsonify
 from game_engine import generate_game, get_default_model
 from openai_client import get_client
 from storage import SITE_DIR, ensure_site, list_games, save_game_files, extract_title_from_html
