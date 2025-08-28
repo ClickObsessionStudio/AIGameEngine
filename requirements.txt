@@ -1,0 +1,11 @@
+# Requirements for AIGameEngine
+requests
+python-dotenv
+
+# Requirements for CinematicTrailerGenAI Module
+
+
+# Requirements for GameDevAI Module
+
+
+# Requirements for TrailerUploader Module

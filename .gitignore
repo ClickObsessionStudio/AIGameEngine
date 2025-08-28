@@ -1,1 +1,11 @@
+# Environment variables
 .env
+client_secret.json
+token.json
+
+# Cinematic Trailer Generation AI
+*.mp4
+
+# Python cache
+__pycache__/
+*.pyc
