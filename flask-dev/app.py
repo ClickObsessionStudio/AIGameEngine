@@ -1,3 +1,4 @@
+# flask-dev/app.py
 from __future__ import annotations
 
 import os
@@ -7,10 +8,10 @@ from flask import Flask, render_template, request, send_from_directory, jsonify
 from dotenv import load_dotenv
 
 # --- Add paths to other modules ---
-# This should be at the top, before other project imports
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(REPO_ROOT / "CinematicTrailerGenAI" / "src"))
-sys.path.append(str(REPO_ROOT / "TrailerUploader" / "YTShorts"))
+# The folders are now inside the same directory as app.py
+APP_ROOT = Path(__file__).resolve().parent
+sys.path.append(str(APP_ROOT / "CinematicTrailerGenAI" / "src"))
+sys.path.append(str(APP_ROOT / "TrailerUploader" / "YTShorts"))
 # --- End of path additions ---
 
 

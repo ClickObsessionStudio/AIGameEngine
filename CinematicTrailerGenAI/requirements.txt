@@ -1,5 +1,0 @@
-python-dotenv
-fal-client
-requests
-moviepy>=2
-imageio-ffmpeg>=0.4.9
