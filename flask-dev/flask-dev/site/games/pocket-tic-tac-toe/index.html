@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Pocket Tic Tac Toe</title>
+<style>
+  :root{
+    --bg: #0b0c10;
+    --fg: #ffffff;
+    --muted: #cfd8dc;
+    --x: #ffeb3b; /* yellow tick */
+    --o: #ff5252; /* red */
+    --line: #37474f;
+    --btn: #1f2833;
+    --btn2: #263238;
+    --focus: #ffeb3b;
+    --inset-dark: rgba(0,0,0,.45);
+    --inset-light: rgba(255,255,255,.06);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:700 15px/1.35 "Courier New", Courier, "Lucida Console", Monaco, monospace;
+    -webkit-font-smoothing:none; -moz-osx-font-smoothing:grayscale; font-smooth:never;
+    image-rendering: pixelated; text-rendering: optimizeSpeed;
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    display:flex; flex-direction:column; gap:12px;
+    letter-spacing:.5px;
+  }
+
+  h1{font-size:1.2rem; margin:.25rem 0 .5rem; text-transform:uppercase; letter-spacing:1px}
+
+  .wrap{max-width:720px; margin:0 auto; width:100%;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  label{display:flex; flex-direction:column; gap:4px; font-size:.9rem}
+
+  /* Pixel blocky surfaces */
+  .pix{
+    border-radius:0 !important;
+    border:4px solid var(--line);
+    box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light),
+      0 4px 0 #000;
+  }
+  .pix:hover{filter:brightness(1.05)}
+  .pix:active{transform:translateY(2px); box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light),
+      0 2px 0 #000;}
+  .pix-flat{
+    border-radius:0 !important;
+    border:4px solid var(--line);
+    box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light);
+  }
+
+  input[type="text"]{
+    background:var(--btn); color:var(--fg); border:4px solid var(--line); border-radius:0;
+    padding:.6rem .75rem; min-width:135px; font-size:1rem; font-weight:700;
+    box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light);
+  }
+  input[type="text"]:focus-visible{outline:3px dashed var(--focus); outline-offset:2px}
+
+  .score{background:var(--btn2); border:4px solid var(--line); border-radius:0; padding:.6rem .8rem; font-weight:800;
+    box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light);
+  }
+  .score strong{font-weight:900}
+  .score .x{color:var(--x)}
+  .score .o{color:var(--o)}
+
+  .status{border-radius:0; padding:.5rem .7rem; background:#11161a; border:4px solid var(--line);
+    box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light);
+  }
+  .status strong{font-weight:900}
+
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:10px 0; width:100%; max-width:min(92vw, 520px)}
+
+  .cell{
+    aspect-ratio:1/1; width:100%; min-width:80px; min-height:80px; border-radius:0; border:4px solid var(--line);
+    background:#0f1418; color:var(--fg); font-weight:900; font-size:clamp(34px, 16vw, 72px);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none;
+    font-family: inherit; letter-spacing:1px;
+    box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light),
+      0 4px 0 #000;
+    transform:translateY(0);
+  }
+  .cell:hover{background:#121a20}
+  .cell:active{transform:translateY(2px); box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light),
+      0 2px 0 #000;}
+  .cell:focus-visible{outline:3px dashed var(--focus); outline-offset:2px}
+  .cell[disabled]{opacity:.92; cursor:not-allowed}
+  .cell.x{color:var(--x)}
+  .cell.o{color:var(--o)}
+  .cell.win{background:#1b2930}
+
+  @media (prefers-reduced-motion: no-preference){
+    @keyframes pop{from{transform:scale(.96)} to{transform:scale(1)}}
+    .cell.filled{animation:pop .14s steps(2, end)}
+  }
+
+  .controls{display:flex; gap:8px; flex-wrap:wrap}
+  button.action{
+    background:var(--btn); color:var(--fg); border:4px solid var(--line); border-radius:0;
+    padding:.7rem 1rem; font-size:1rem; font-weight:900; min-width:140px;
+    box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light),
+      0 4px 0 #000;
+    text-transform:uppercase; letter-spacing:1px;
+  }
+  button.action:focus-visible{outline:3px dashed var(--focus); outline-offset:2px}
+
+  details{background:#0f1418; border:4px solid var(--line); border-radius:0; padding:.6rem .8rem;
+    box-shadow:
+      inset -4px -4px 0 var(--inset-dark),
+      inset 4px 4px 0 var(--inset-light);
+  }
+  details>summary{cursor:pointer; font-weight:900; outline:none; text-transform:uppercase}
+  details>summary:focus-visible{outline:3px dashed var(--focus); outline-offset:4px}
+
+  .sr-only{position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Pocket Tic Tac Toe</h1>
+
+    <div class="row" aria-label="Player names">
+      <label for="nameX">Player X
+        <input id="nameX" type="text" inputmode="text" autocomplete="name" maxlength="24" aria-label="Name for Player X" placeholder="Player X">
+      </label>
+      <label for="nameO">Player O
+        <input id="nameO" type="text" inputmode="text" autocomplete="name" maxlength="24" aria-label="Name for Player O" placeholder="Player O">
+      </label>
+    </div>
+
+    <div class="score" id="score" aria-live="polite"></div>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+
+    <div id="grid" class="grid" aria-label="Tic Tac Toe board" role="group">
+      <button class="cell" data-i="0" aria-label="Cell 1, empty"></button>
+      <button class="cell" data-i="1" aria-label="Cell 2, empty"></button>
+      <button class="cell" data-i="2" aria-label="Cell 3, empty"></button>
+      <button class="cell" data-i="3" aria-label="Cell 4, empty"></button>
+      <button class="cell" data-i="4" aria-label="Cell 5, empty"></button>
+      <button class="cell" data-i="5" aria-label="Cell 6, empty"></button>
+      <button class="cell" data-i="6" aria-label="Cell 7, empty"></button>
+      <button class="cell" data-i="7" aria-label="Cell 8, empty"></button>
+      <button class="cell" data-i="8" aria-label="Cell 9, empty"></button>
+    </div>
+
+    <div class="controls">
+      <button id="newRound" class="action" type="button" aria-label="Start a new round">New round</button>
+      <button id="resetAll" class="action" type="button" aria-label="Reset scores, names, and settings">Reset all</button>
+    </div>
+
+    <details>
+      <summary>Help / About</summary>
+      <div>
+        • Two players take turns placing X and O. First to get three in a row wins.<br>
+        • Tap a cell (or use arrow keys to move focus) and press it to place your mark.<br>
+        • New round keeps scores; Reset all clears everything. Rounds alternate who starts.<br>
+        • Works offline. High-contrast and reduced motion friendly.
+      </div>
+    </details>
+  </div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const statusEl = $('#status');
+  const scoreEl = $('#score');
+  const nameX = $('#nameX');
+  const nameO = $('#nameO');
+  const grid = $('#grid');
+  const cells = $$('.cell');
+  const newBtn = $('#newRound');
+  const resetBtn = $('#resetAll');
+  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+  function loadStore(){ try{ return JSON.parse(localStorage.getItem('ttt_v1'))||null }catch(e){ return null } }
+  function saveStore(){ try{ localStorage.setItem('ttt_v1', JSON.stringify(store)); }catch(e){} }
+
+  const defaults = {xWins:0,oWins:0,draws:0,names:{X:'Player X',O:'Player O'},nextStarter:'X'};
+  let store = (function(){
+    const s = loadStore();
+    if(!s || typeof s!== 'object') return Object.assign({}, defaults);
+    const out = Object.assign({}, defaults, s);
+    if(!out.names || typeof out.names!== 'object') out.names = {X:defaults.names.X, O:defaults.names.O};
+    out.names.X = String(out.names.X||defaults.names.X).slice(0,24);
+    out.names.O = String(out.names.O||defaults.names.O).slice(0,24);
+    out.nextStarter = out.nextStarter==='O' ? 'O' : 'X';
+    out.xWins = out.xWins|0; out.oWins = out.oWins|0; out.draws = out.draws|0;
+    return out;
+  })();
+  saveStore();
+
+  let board = Array(9).fill('');
+  let current = store.nextStarter || 'X';
+  let finished = false;
+
+  function updateScoreUI(){
+    scoreEl.innerHTML = '<span class="x"><strong>X</strong> ('+esc(store.names.X)+'):</span> '+store.xWins+
+      ' • Draws: '+store.draws+' • '+
+      '<span class="o"><strong>O</strong> ('+esc(store.names.O)+'):</span> '+store.oWins;
+  }
+  function esc(s){ return (''+s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;"," >":"&gt;","\"":"&quot;","'":"&#39;"}[m])) }
+  function setStatus(t){ statusEl.textContent = t; }
+
+  function setTurnText(){
+    setStatus('Turn: '+store.names[current]+' ('+current+')');
+  }
+
+  function disableAll(){ cells.forEach(b=>b.disabled=true); }
+
+  function showRound(){ newBtn.disabled = false; }
+
+  function clearBoard(){
+    board = Array(9).fill(''); finished=false; current = store.nextStarter || 'X';
+    cells.forEach((b,i)=>{ b.textContent=''; b.disabled=false; b.className='cell'; b.dataset.symbol=''; b.setAttribute('aria-label','Cell '+(i+1)+', empty'); });
+    setTurnText();
+    setTimeout(()=>{ const f = cells.find(c=>!c.disabled); if(f) f.focus({preventScroll:true}); }, 0);
+  }
+
+  function endRound(result){
+    finished = true; disableAll();
+    if(result==='draw'){
+      setStatus('Draw.'); store.draws++;
+    }else{
+      setStatus(store.names[result]+' ('+result+') wins!');
+      if(result==='X') store.xWins++; else store.oWins++;
+    }
+    store.nextStarter = store.nextStarter==='X' ? 'O' : 'X';
+    saveStore(); updateScoreUI(); showRound();
+  }
+
+  function checkWin(){
+    for(const line of wins){ const [a,b,c]=line; if(board[a] && board[a]===board[b] && board[a]===board[c]) return line; }
+    return null;
+  }
+
+  function handleMove(i){
+    if(finished || board[i]) return;
+    board[i] = current;
+    const btn = cells[i];
+    btn.textContent = current; btn.dataset.symbol=current; btn.classList.add('filled', current==='X'?'x':'o');
+    btn.setAttribute('aria-label','Cell '+(i+1)+', '+current); btn.disabled = true;
+    const winLine = checkWin();
+    if(winLine){ winLine.forEach(ix=>cells[ix].classList.add('win')); endRound(current); return; }
+    if(board.every(Boolean)){ endRound('draw'); return; }
+    current = current==='X' ? 'O' : 'X'; setTurnText();
+  }
+
+  cells.forEach(btn=>{
+    btn.addEventListener('click', e=>{ handleMove(parseInt(btn.dataset.i,10)); });
+  });
+
+  grid.addEventListener('keydown', e=>{
+    const key = e.key;
+    if(!/Arrow(Up|Down|Left|Right)/.test(key)) return;
+    e.preventDefault();
+    const cur = document.activeElement;
+    let idx = cells.indexOf(cur); if(idx<0) idx = 0;
+    const step = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-3, ArrowDown:3}[key];
+    let next = idx;
+    for(let tries=0; tries<9; tries++){
+      next = (next + step + 9) % 9;
+      if(!cells[next].disabled){ cells[next].focus(); break; }
+    }
+  });
+
+  newBtn.addEventListener('click', ()=>{ clearBoard(); });
+
+  resetBtn.addEventListener('click', ()=>{
+    if(!confirm('Reset scores, names, and settings?')) return;
+    try{ localStorage.removeItem('ttt_v1'); }catch(e){}
+    store = Object.assign({}, defaults);
+    saveStore();
+    nameX.value=''; nameO.value='';
+    updateScoreUI(); clearBoard();
+  });
+
+  function onNameChange(sym, val){
+    const v = (val||'').trim();
+    store.names[sym] = v || (sym==='X' ? 'Player X' : 'Player O');
+    saveStore(); updateScoreUI();
+    setTurnText();
+  }
+
+  nameX.addEventListener('change', e=> onNameChange('X', e.target.value));
+  nameO.addEventListener('change', e=> onNameChange('O', e.target.value));
+  nameX.addEventListener('input', e=>{ e.target.setAttribute('aria-label','Name for Player X: '+e.target.value); });
+  nameO.addEventListener('input', e=>{ e.target.setAttribute('aria-label','Name for Player O: '+e.target.value); });
+
+  nameX.value = store.names.X !== 'Player X' ? store.names.X : '';
+  nameO.value = store.names.O !== 'Player O' ? store.names.O : '';
+  updateScoreUI(); clearBoard();
+})();
+</script>
+</body>
+</html>

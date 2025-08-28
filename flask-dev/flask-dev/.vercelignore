@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Local site content (generated)
+site/games/
+site/catalog.json
+
+# OS / misc
+.DS_Store
+Thumbs.db
+*.zip
+*.tar
+*.tar.gz
+*.mp4
+*.psd
+*.dmg
+*.exe
+*.deb

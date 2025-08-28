@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Library – Game Library{% endblock %}
+{% block content %}
+<div class="lib-header">
+  <h1 class="h1">Games</h1>
+</div>
+
+<div class="grid">
+  {% for g in games %}
+  <article class="card">
+    <h2 class="card-title">{{ g.title }}</h2>
+    <p class="card-summary">{{ g.summary }}</p>
+    <div class="card-row">
+      <span class="muted">{{ g.added_at }}</span>
+      <a class="btn btn-ghost" href="/games/{{ g.slug }}/">Play ▶</a>
+    </div>
+  </article>
+  {% else %}
+  <p class="muted empty">No games yet. Click <a href="/create">Create Game</a> to add one.</p>
+  {% endfor %}
+</div>
+{% endblock %}

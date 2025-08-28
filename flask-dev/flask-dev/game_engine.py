@@ -1,4 +1,6 @@
 # game_engine.py
+from __future__ import annotations
+
 import os
 import json
 from dotenv import load_dotenv
@@ -7,8 +9,13 @@ from openai import OpenAI
 from data_class import PipelineOutput
 from utils import ensure_game_payload
 from instructions import SYSTEM_INSTRUCTIONS_ONE_CALL
+from openai_client import get_client  # central client
 
-DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
+# Load .env BEFORE reading env vars
+load_dotenv()
+
+def get_default_model() -> str:
+    return os.getenv("OPENAI_MODEL", "gpt-5")
 
 
 def build_user_message(user_prompt: str) -> str:
@@ -21,16 +28,12 @@ def build_user_message(user_prompt: str) -> str:
     )
 
 
-def generate_game(user_prompt: str, model: str = DEFAULT_MODEL) -> PipelineOutput:
+def generate_game(user_prompt: str, model: str | None = None) -> PipelineOutput:
     """
     Core pipeline: calls the model once and returns (title, summary, html).
     """
-    load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY not set. Put it in your environment or a .env file.")
-
-    client = OpenAI(api_key=api_key)
+    client: OpenAI = get_client()
+    model = model or get_default_model()
 
     resp = client.chat.completions.create(
         model=model,
@@ -53,7 +56,6 @@ if __name__ == "__main__":
     print("\n✅ Generated game!")
     print(f"Title  : {result.title}")
     print(f"Summary: {result.summary}")
-    # Optionally write the HTML for quick preview:
     out_path = "index.html"
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(result.html)

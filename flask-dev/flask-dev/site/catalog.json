@@ -1,0 +1,38 @@
+[
+  {
+    "slug": "keep-of-the-last-knight",
+    "title": "Keep of the Last Knight",
+    "summary": "A fun game.",
+    "added_at": "2025-08-28T19:18:59.454519Z",
+    "thumbnail": "/site/games/keep-of-the-last-knight/thumb.svg",
+    "path": "/games/keep-of-the-last-knight/",
+    "play_count": 0
+  },
+  {
+    "slug": "pocket-pong-2-player",
+    "title": "Pocket Pong: 2-Player",
+    "summary": "A fun game.",
+    "added_at": "2025-08-28T18:47:41.823218Z",
+    "thumbnail": "/site/games/pocket-pong-2-player/thumb.svg",
+    "path": "/games/pocket-pong-2-player/",
+    "play_count": 0
+  },
+  {
+    "slug": "pocket-chess-two-players",
+    "title": "Pocket Chess (Two Players)",
+    "summary": "A fun game.",
+    "added_at": "2025-08-28T18:19:52.479283Z",
+    "thumbnail": "/site/games/pocket-chess-two-players/thumb.svg",
+    "path": "/games/pocket-chess-two-players/",
+    "play_count": 0
+  },
+  {
+    "slug": "pocket-tic-tac-toe",
+    "title": "Pocket Tic Tac Toe",
+    "summary": "A fun game.",
+    "added_at": "2025-08-28T18:16:42.571899Z",
+    "thumbnail": "/site/games/pocket-tic-tac-toe/thumb.svg",
+    "path": "/games/pocket-tic-tac-toe/",
+    "play_count": 0
+  }
+]
