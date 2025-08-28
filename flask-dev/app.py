@@ -7,9 +7,9 @@ from pathlib import Path
 
 # --- Add paths to other modules ---
 # The folders are now inside the same directory as app.py
-APP_ROOT = Path(__file__).resolve().parent
-sys.path.append(str(APP_ROOT / "CinematicTrailerGenAI" / "src"))
-sys.path.append(str(APP_ROOT / "TrailerUploader" / "YTShorts"))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT / "CinematicTrailerGenAI" / "src"))
+sys.path.append(str(REPO_ROOT / "TrailerUploader" / "YTShorts"))
 # --- End of path additions ---
 
 from flask import Flask, render_template, request, send_from_directory, jsonify
