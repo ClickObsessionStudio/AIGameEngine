@@ -7,7 +7,18 @@ from dotenv import load_dotenv
 from game_engine import generate_game, get_default_model  # updated helper
 from openai_client import get_client                      # single client
 from storage import SITE_DIR, ensure_site, list_games, save_game_files, extract_title_from_html
+
+from pathlib import Path
+from flask import send_file
+# trailers
+
+# youtube
+
+
 ensure_site()
+
+MEDIA_DIR = (SITE_DIR / "media") if not os.getenv("VERCEL") else Path("/tmp/site/media")
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
 load_dotenv()
 client = get_client()
@@ -117,6 +128,134 @@ def api_save_generated():
         "path": f"/games/{saved['slug']}/"
     })
 
+
+#---------- Media APIs ----------
+@app.post("/api/trailer/generate")
+def api_trailer_generate():
+    """
+    Generate a cinematic trailer from the user's current prompt/summary,
+    then create a vertical 'pad' version for Shorts.
+    Stores MP4s under MEDIA_DIR and returns the padded video URL.
+    """
+    if os.getenv("VERCEL"):
+        return jsonify({"ok": False, "error": "Trailer generation is disabled on Vercel. Run locally."}), 501
+    
+    from generate_cinematic_trailer import generate_cinematic_trailer
+    from video_utils import resize_video_to_vertical
+
+    data = request.get_json(force=True) or {}
+    summary = (data.get("summary") or data.get("prompt") or "").strip()
+    title = (data.get("title") or "game-trailer").strip()[:60]
+    if not summary:
+        return ("Missing summary/prompt", 400)
+
+    base_name = f"{title.lower().replace(' ', '-')}-trailer"
+    gen_name = f"{base_name}.mp4"
+    pad_name = f"{base_name}-pad.mp4"
+
+    gen_path = MEDIA_DIR / gen_name
+    pad_path = MEDIA_DIR / pad_name
+
+    try:
+        # 1) Generate (landscape or mixed)
+        _ = generate_cinematic_trailer(
+            prompt=summary,
+            model=data.get("model") or "MiniMax-Hailuo-02",
+            duration=int(data.get("duration") or 6),
+            resolution=data.get("resolution") or "768P",
+            output_path=str(gen_path)
+        )
+
+        # 2) Resize to vertical with padding (Shorts friendly)
+        #    Some helpers return a path; some write in place. Handle both.
+        maybe_new = resize_video_to_vertical(gen_path, mode="pad")
+        if maybe_new:
+            try:
+                # If it returned a path/string, use it
+                from pathlib import Path as _P
+                pad_path = _P(maybe_new)
+            except Exception:
+                pass
+        # If the helper wrote to "{orig}_pad.mp4", move/rename to our expected pad_name if needed
+        if not pad_path.exists():
+            # try common default naming from helpers
+            guessed = MEDIA_DIR / f"{gen_path.stem}_pad.mp4"
+            if guessed.exists():
+                guessed.replace(pad_path)
+            else:
+                # last resort: if helper modified in place, copy to pad_name
+                if gen_path.exists():
+                    import shutil
+                    shutil.copy2(gen_path, pad_path)
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"generate_or_pad_failed: {e}"}), 500
+
+    return jsonify({
+        "ok": True,
+        "filename": pad_path.name,           # return the PADDED filename
+        "video_url": f"/media/{pad_path.name}"
+    })
+
+
+
+from googleapiclient.errors import HttpError
+import traceback
+
+@app.post("/api/trailer/upload")
+def api_trailer_upload():
+    if os.getenv("VERCEL"):
+        return jsonify({"ok": False, "error": "YouTube upload is disabled on Vercel. Run locally."}), 501
+
+    from upload_yt_shorts import upload_video, get_youtube_client
+    from googleapiclient.errors import HttpError
+    import traceback
+    
+
+    data = request.get_json(force=True) or {}
+    filename = (data.get("filename") or "").strip()
+    title = (data.get("title") or "Game Trailer").strip()
+    description = (data.get("description") or "").strip()
+    privacy = (data.get("privacy") or "public").strip()
+
+    if not filename:
+        return ("Missing filename", 400)
+
+    video_path = MEDIA_DIR / filename
+    if not video_path.exists():
+        return (f"File not found: {video_path}", 404)
+
+    try:
+        yt = get_youtube_client()
+        video_id = upload_video(
+            yt,
+            file_path=str(video_path),
+            title=title[:95],
+            description=description[:4900],
+            tags=["#shorts", "game", "trailer"],
+            privacy_status=privacy
+        )
+        return jsonify({"ok": True, "video_id": video_id, "watch_url": f"https://youtu.be/{video_id}"})
+    except HttpError as he:
+        try:
+            err_msg = he.content.decode("utf-8") if hasattr(he, "content") else str(he)
+        except Exception:
+            err_msg = str(he)
+        return jsonify({"ok": False, "error": "YouTube API error", "details": err_msg}), 500
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"{e.__class__.__name__}: {e}", "trace": traceback.format_exc(limit=2)}), 500
+
+
+
+@app.get("/media/<path:filename>")
+def media(filename: str):
+    """
+    Serve generated media (local/dev). On Vercel this will only work during a warm run.
+    """
+    path = MEDIA_DIR / filename
+    if not path.exists():
+        return ("Not found", 404)
+    return send_file(path, mimetype="video/mp4", as_attachment=False)
 
 # Static proxy (optional: thumbs etc.)
 @app.get("/site/<path:subpath>")
