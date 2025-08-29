@@ -7,7 +7,7 @@ from pathlib import Path
 
 # --- Add paths to other modules ---
 # This pathing is correct for a monorepo structure
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent
 sys.path.append(str(REPO_ROOT / "CinematicTrailerGenAI" / "src"))
 sys.path.append(str(REPO_ROOT / "TrailerUploader" / "YTShorts"))
 # --- End of path additions ---
@@ -144,6 +144,9 @@ def api_trailer_generate():
     then create a vertical 'pad' version for Shorts.
     Stores MP4s under MEDIA_DIR and returns the padded video URL.
     """
+    from generate_cinematic_trailer import generate_cinematic_trailer
+    from video_utils import resize_video_to_vertical
+    
     if os.getenv("VERCEL"):
         return jsonify({"ok": False, "error": "Trailer generation is disabled on Vercel. Run locally."}), 501
     
