@@ -22,3 +22,6 @@ Thumbs.db
 *.dmg
 *.exe
 *.deb
+
+# Not yet used modules
+flask-dev/VideoEditorAI/*

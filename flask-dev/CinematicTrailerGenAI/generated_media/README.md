@@ -1,0 +1,1 @@
+Generated videos are inside this folder.

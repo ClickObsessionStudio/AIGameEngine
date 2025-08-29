@@ -1,4 +1,4 @@
-# File: AI/CinematicTrailerGenAI/src/generate_cinematic_trailer.py
+# File: AI/flask-dev/CinematicTrailerGenAI/src/generate_cinematic_trailer.py
 
 import os
 import time

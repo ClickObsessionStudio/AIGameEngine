@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# AI/flask-dev/TrailerUploader/YTShorts/upload_yt_shorts.py
 """
 Minimal YouTube uploader (YouTube Data API v3)
 ...
