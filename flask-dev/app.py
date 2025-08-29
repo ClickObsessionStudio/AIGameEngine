@@ -6,25 +6,18 @@ import sys
 from pathlib import Path
 
 # --- Add paths to other modules ---
-# The folders are now inside the same directory as app.py
-APP_ROOT = Path(__file__).resolve().parent
-sys.path.append(str(APP_ROOT / "CinematicTrailerGenAI" / "src"))
-sys.path.append(str(APP_ROOT / "TrailerUploader" / "YTShorts"))
+# This pathing is correct for a monorepo structure
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(REPO_ROOT / "CinematicTrailerGenAI" / "src"))
+sys.path.append(str(REPO_ROOT / "TrailerUploader" / "YTShorts"))
 # --- End of path additions ---
 
 from flask import Flask, render_template, request, send_from_directory, jsonify
+from dotenv import load_dotenv  # <-- THIS LINE WAS MISSING
 from game_engine import generate_game, get_default_model
 from openai_client import get_client
 from storage import SITE_DIR, ensure_site, list_games, save_game_files, extract_title_from_html
 from flask import send_file
-
-# trailers - Now these imports will work
-from generate_cinematic_trailer import generate_cinematic_trailer
-from video_utils import resize_video_to_vertical
-
-# youtube - This import will work after renaming the file
-from upload_yt_shorts import upload_video, get_youtube_client
-
 from googleapiclient.errors import HttpError
 import traceback
 
