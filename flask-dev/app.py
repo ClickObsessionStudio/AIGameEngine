@@ -147,8 +147,8 @@ def api_trailer_generate():
     from generate_cinematic_trailer import generate_cinematic_trailer
     from video_utils import resize_video_to_vertical
     
-    if os.getenv("VERCEL"):
-        return jsonify({"ok": False, "error": "Trailer generation is disabled on Vercel. Run locally."}), 501
+    # if os.getenv("VERCEL"):
+    #     return jsonify({"ok": False, "error": "Trailer generation is disabled on Vercel. Run locally."}), 501
     
     data = request.get_json(force=True) or {}
     summary = (data.get("summary") or data.get("prompt") or "").strip()
